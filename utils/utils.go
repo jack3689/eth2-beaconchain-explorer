@@ -201,10 +201,10 @@ func GetTemplateFuncs() template.FuncMap {
 		},
 		"bigDecimalShift": func(num []byte, shift []byte) string {
 			numFloat := new(big.Float).SetInt(new(big.Int).SetBytes(num))
-			denom := new(big.Int).Exp(big.NewInt(10), new(big.Int).SetBytes(shift), nil)
-			// shift := new(big.Float).SetInt(new(big.Int).SetBytes(shift))
+			shiftInt := new(big.Int).SetBytes(shift)
+			denom := new(big.Int).Exp(big.NewInt(10), shiftInt, nil)
 			res := new(big.Float).Quo(numFloat, new(big.Float).SetInt(denom))
-			return res.Text('f', int(res.MinPrec()))
+			return res.Text('f', int(shiftInt.Int64()))
 		},
 		"trimTrailingZero": func(num string) string {
 			if strings.Contains(num, ".") {
