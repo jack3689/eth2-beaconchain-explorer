@@ -49,7 +49,7 @@ func GetEth1Transaction(hash common.Hash) (*types.Eth1TxData, error) {
 	tx, pending, err := rpc.CurrentErigonClient.GetNativeClient().TransactionByHash(ctx, hash)
 
 	if err != nil {
-		return nil, fmt.Errorf("error retrieving data for tx %v: %v", hash, err)
+		return nil, fmt.Errorf("error retrieving data for tx %v: %w", hash, err)
 	}
 
 	if pending {
@@ -167,11 +167,14 @@ func GetEth1Transaction(hash common.Hash) (*types.Eth1TxData, error) {
 				cmEntry.meta, cmEntry.err = db.BigtableClient.GetContractMetadata(log.Address.Bytes())
 				contractMetadataCache[log.Address] = cmEntry
 			}
-
 			if cmEntry.err != nil || cmEntry.meta == nil || cmEntry.meta.ABI == nil {
+				name := ""
+				if len(log.Topics) > 0 {
+					name = db.BigtableClient.GetEventLabel(log.Topics[0][:])
+				}
 				eth1Event := &types.Eth1EventData{
 					Address: log.Address,
-					Name:    "",
+					Name:    name,
 					Topics:  log.Topics,
 					Data:    log.Data,
 				}
@@ -284,33 +287,24 @@ func GetEth1Transaction(hash common.Hash) (*types.Eth1TxData, error) {
 	return txPageData, nil
 }
 
-func GetCodeAt(ctx context.Context, address common.Address) ([]byte, error) {
-	cacheKey := fmt.Sprintf("%d:a:%s", utils.Config.Chain.Config.DepositChainID, address.String())
-	if wanted, err := cache.TieredCache.GetStringWithLocalTimeout(cacheKey, time.Hour); err == nil {
-		logger.Infof("retrieved code data for address %v from cache", address)
-
-		return []byte(wanted), nil
+func IsContract(ctx context.Context, address common.Address) (bool, error) {
+	cacheKey := fmt.Sprintf("%d:isContract:%s", utils.Config.Chain.Config.DepositChainID, address.String())
+	if wanted, err := cache.TieredCache.GetBoolWithLocalTimeout(cacheKey, time.Hour); err == nil {
+		return wanted, nil
 	}
 
 	code, err := rpc.CurrentErigonClient.GetNativeClient().CodeAt(ctx, address, nil)
 	if err != nil {
-		return nil, fmt.Errorf("error retrieving code data for address %v: %v", address, err)
+		return false, fmt.Errorf("error retrieving code data for address %v: %v", address, err)
 	}
 
-	err = cache.TieredCache.SetString(cacheKey, string(code), time.Hour*24)
+	isContract := len(code) != 0
+	err = cache.TieredCache.SetBool(cacheKey, isContract, time.Hour*24)
 	if err != nil {
-		return nil, fmt.Errorf("error writing code data for address %v to cache: %v", address, err)
+		return false, fmt.Errorf("error writing code data for address %v to cache: %v", address, err)
 	}
 
-	return code, nil
-}
-
-func IsContract(ctx context.Context, address common.Address) (bool, error) {
-	code, err := GetCodeAt(ctx, address)
-	if err != nil {
-		return false, err
-	}
-	return len(code) != 0, nil
+	return isContract, nil
 }
 
 func GetBlockHeaderByHash(ctx context.Context, hash common.Hash) (*geth_types.Header, error) {

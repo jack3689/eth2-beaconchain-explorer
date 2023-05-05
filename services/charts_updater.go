@@ -462,7 +462,7 @@ func participationRateChartData() (*types.GenericChartData, error) {
 	if epoch > 0 {
 		epoch--
 	}
-	err := db.ReaderDb.Select(&rows, "SELECT epoch / $2 as day, AVG(globalparticipationrate) as globalparticipationrate FROM epochs WHERE epoch < $1 GROUP BY day ORDER BY day limit 10;", epoch, utils.EpochsPerDay())
+	err := db.ReaderDb.Select(&rows, "SELECT epoch / $2 as day, AVG(globalparticipationrate) as globalparticipationrate FROM epochs WHERE epoch < $1 GROUP BY day ORDER BY day;", epoch, utils.EpochsPerDay())
 	if err != nil {
 		return nil, err
 	}
@@ -647,7 +647,7 @@ func balanceDistributionChartData() (*types.GenericChartData, error) {
 		if len(balance) == 0 {
 			continue
 		}
-		currentBalances = append(currentBalances, float64(balance[0].Balance)/1e6)
+		currentBalances = append(currentBalances, float64(balance[0].Balance)/1e9)
 	}
 
 	bins := int(math.Sqrt(float64(len(currentBalances)))) + 1
@@ -697,7 +697,7 @@ func effectiveBalanceDistributionChartData() (*types.GenericChartData, error) {
 		if len(balance) == 0 {
 			continue
 		}
-		effectiveBalances = append(effectiveBalances, float64(balance[0].EffectiveBalance)/1e6)
+		effectiveBalances = append(effectiveBalances, float64(balance[0].EffectiveBalance)/1e9)
 	}
 
 	bins := int(math.Sqrt(float64(len(effectiveBalances)))) + 1
@@ -1673,7 +1673,7 @@ func MarketCapChartData() (*types.GenericChartData, error) {
 
 	chartData := &types.GenericChartData{
 		Title:                           "Market Cap",
-		Subtitle:                        "The Evolution of the Ethereum Makret Cap.",
+		Subtitle:                        "The Evolution of the Ethereum Market Cap.",
 		XAxisTitle:                      "",
 		YAxisTitle:                      "Market Cap [$]",
 		StackingMode:                    "false",

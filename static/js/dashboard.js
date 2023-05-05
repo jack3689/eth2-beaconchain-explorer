@@ -415,7 +415,7 @@ $(document).ready(function () {
       clearSearch.empty().append(copyIcon)
     }, 500)
   })
-
+  $.fn.DataTable.ext.pager.numbers_length = 5
   var validatorsDataTable = (window.vdt = $("#validators").DataTable({
     processing: true,
     serverSide: false,
@@ -428,6 +428,10 @@ $(document).ready(function () {
     language: {
       search: "",
       searchPlaceholder: "Search...",
+      paginate: {
+        previous: '<i class="fas fa-chevron-left"></i>',
+        next: '<i class="fas fa-chevron-right"></i>',
+      },
     },
     preDrawCallback: function () {
       // this does not always work.. not sure how to solve the staying tooltip
@@ -959,6 +963,7 @@ $(document).ready(function () {
           document.querySelector("#earnings-week").innerHTML = result.lastWeekFormatted || "0.000"
           document.querySelector("#earnings-month").innerHTML = result.lastMonthFormatted || "0.000"
           document.querySelector("#earnings-total").innerHTML = result.totalFormatted || "0.000"
+          $("#earnings-total").find('[data-toggle="tooltip"]').tooltip()
           document.querySelector("#balance-total").innerHTML = result.totalBalance || "0.000"
           $("#balance-total span:first").removeClass("text-success").removeClass("text-danger")
           $("#balance-total span:first").html($("#balance-total span:first").html().replace("+", ""))
